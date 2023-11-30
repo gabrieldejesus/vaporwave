@@ -2,6 +2,13 @@
 
 import * as THREE from "three";
 import { useRef, useEffect } from "react";
+import {
+  EffectComposer,
+  GammaCorrectionShader,
+  RGBShiftShader,
+  RenderPass,
+  ShaderPass,
+} from "three/examples/jsm/Addons.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 
 const ThreeScene: React.FC = () => {
@@ -12,22 +19,41 @@ const ThreeScene: React.FC = () => {
       // textures
       const textureLoader = new THREE.TextureLoader();
       const gridTexture = textureLoader.load("/grid.png");
+      const terrainTexture = textureLoader.load("/displacement.png");
 
       const canvas = containerRef?.current as HTMLElement;
 
       // scene
       const scene = new THREE.Scene();
 
+      // add some fog to the back of the scene
+      const fog = new THREE.Fog(0x000000, 1, 2.5);
+      scene.fog = fog;
+
       // objects
       const geometry = new THREE.PlaneGeometry(1, 2, 24, 24);
-      const material = new THREE.MeshBasicMaterial({ map: gridTexture });
+      const material = new THREE.MeshStandardMaterial({
+        map: gridTexture,
+        displacementMap: terrainTexture,
+        displacementScale: 0.4,
+      });
 
       const plane = new THREE.Mesh(geometry, material);
       plane.rotation.x = -Math.PI * 0.5;
       plane.position.y = 0.0;
       plane.position.z = 0.15;
 
+      const plane2 = new THREE.Mesh(geometry, material);
+      plane2.rotation.x = -Math.PI * 0.5;
+      plane2.position.y = 0.0;
+      plane2.position.z = -1.85;
+
       scene.add(plane);
+      scene.add(plane2);
+
+      // lights
+      const ambientLight = new THREE.AmbientLight(0xffffff, 10);
+      scene.add(ambientLight);
 
       // sizes
       const sizes = { width: window.innerWidth, height: window.innerHeight };
@@ -52,11 +78,24 @@ const ThreeScene: React.FC = () => {
       renderer.setSize(sizes.width, sizes.height);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-      // const renderer = new THREE.WebGLRenderer();
+      // post processing (add the effect composer)
+      const effectComposer = new EffectComposer(renderer);
+      effectComposer.setSize(sizes.width, sizes.height);
+      effectComposer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
 
-      // renderer.setSize(window.innerWidth, window.innerHeight);
-      // containerRef.current?.appendChild(renderer.domElement);
-      // camera.position.z = 5;
+      // add the render path to the compose
+      const renderPass = new RenderPass(scene, camera);
+      effectComposer.addPass(renderPass);
+
+      // add the rgbShift pass to the composer
+      const rgbShiftPass = new ShaderPass(RGBShiftShader);
+      rgbShiftPass.uniforms["amount"].value = 0.0015;
+
+      effectComposer.addPass(rgbShiftPass);
+
+      // add the gammaCorrection pass to the coomposer to fix the color issues
+      const gammaCorrectionPass = new ShaderPass(GammaCorrectionShader);
+      effectComposer.addPass(gammaCorrectionPass);
 
       // event listener to handle screen resize
       const handleResize = () => {
@@ -71,17 +110,41 @@ const ThreeScene: React.FC = () => {
         // update renderer
         renderer.setSize(sizes.width, sizes.height);
         renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+
+        // update effect composer
+        effectComposer.setSize(sizes.width, sizes.height);
+        effectComposer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
       };
 
       window.addEventListener("resize", handleResize);
 
       // animate
+      const clock = new THREE.Clock();
+
       const tick = () => {
+        // get the elapsedTime since the scene rendered from the clock
+        const elapsedTime = clock.getElapsedTime();
+
         // update controls
         controls.update();
 
+        /**
+         * When the first plane reaches a positon of z = 2
+         * I reset it to 0, its initial position
+         */
+        plane.position.z = (elapsedTime * 0.15) % 2;
+
+        /**
+         * When the first plane reaches a position of z = 0
+         * I reset it to -2, its initial position
+         */
+        plane2.position.z = ((elapsedTime * 0.15) % 2) - 2;
+
         // update the rendered scene
         renderer.render(scene, camera);
+
+        // I use the render method of the effect composer instead to render  the scene with our post-processing effects
+        effectComposer.render();
 
         // call tick again on the next frame
         window.requestAnimationFrame(tick);
