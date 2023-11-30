@@ -7,6 +7,6 @@
 - [x] Build the terrain
 - [x] Animate the scene
 - [x] Add post-processing effects
-- [ ] Create lights
+- [x] Create lights
 - [ ] Add a title
 - [ ] Add music

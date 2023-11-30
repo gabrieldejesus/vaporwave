@@ -2,14 +2,12 @@
 
 import * as THREE from "three";
 import { useRef, useEffect } from "react";
-import {
-  EffectComposer,
-  GammaCorrectionShader,
-  RGBShiftShader,
-  RenderPass,
-  ShaderPass,
-} from "three/examples/jsm/Addons.js";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
+import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
+import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
+import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader.js";
+import { ShaderPass } from "three/examples/jsm/postprocessing/ShaderPass.js";
+import { RGBShiftShader } from "three/examples/jsm/shaders/RGBShiftShader.js";
 
 const ThreeScene: React.FC = () => {
   const containerRef = useRef<HTMLCanvasElement>(null);
@@ -20,6 +18,7 @@ const ThreeScene: React.FC = () => {
       const textureLoader = new THREE.TextureLoader();
       const gridTexture = textureLoader.load("/grid.png");
       const terrainTexture = textureLoader.load("/displacement.png");
+      const metalnessTexture = textureLoader.load("./metalness.png");
 
       const canvas = containerRef?.current as HTMLElement;
 
@@ -31,11 +30,14 @@ const ThreeScene: React.FC = () => {
       scene.fog = fog;
 
       // objects
-      const geometry = new THREE.PlaneGeometry(1, 2, 24, 24);
+      const geometry = new THREE.PlaneGeometry(0.5, 2, 24, 24);
       const material = new THREE.MeshStandardMaterial({
         map: gridTexture,
         displacementMap: terrainTexture,
         displacementScale: 0.4,
+        metalnessMap: metalnessTexture,
+        metalness: 0.96,
+        roughness: 0.5,
       });
 
       const plane = new THREE.Mesh(geometry, material);
@@ -54,6 +56,41 @@ const ThreeScene: React.FC = () => {
       // lights
       const ambientLight = new THREE.AmbientLight(0xffffff, 10);
       scene.add(ambientLight);
+
+      // right spotlight aiming to the left
+      const rightSpotLight = new THREE.SpotLight(
+        0x007de7,
+        20,
+        25,
+        Math.PI * 0.1,
+        0.25
+      );
+      rightSpotLight.position.set(0.5, 0.75, 2.2);
+      // target the right spotlight to a specific point to the left of the scene
+      rightSpotLight.target.position.x = -0.25;
+      rightSpotLight.target.position.y = 0.25;
+      rightSpotLight.target.position.z = 0.25;
+
+      scene.add(rightSpotLight);
+      scene.add(rightSpotLight.target);
+
+      // left spotlight aiming to the right
+      const leftSpotLight = new THREE.SpotLight(
+        0x007de7,
+        20,
+        25,
+        Math.PI * 0.1,
+        0.25
+      );
+      leftSpotLight.position.set(-0.5, 0.75, 2.2);
+
+      // target the spotlight to a specific point to the right of the scene
+      leftSpotLight.target.position.x = 0.25;
+      leftSpotLight.target.position.y = 0.25;
+      leftSpotLight.target.position.z = 0.25;
+
+      scene.add(leftSpotLight);
+      scene.add(leftSpotLight.target);
 
       // sizes
       const sizes = { width: window.innerWidth, height: window.innerHeight };
