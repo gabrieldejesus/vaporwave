@@ -5,7 +5,7 @@
 <br />
 
 <div align="center"><strong>Vaporwave Effect</strong></div>
-<div align="center">An application that demonstrates an effect of the aesthetic created by Vaporwave the microgenre of electronic music.</div>
+<div align="center">An application that demonstrates an effect of the aesthetic created by Vaporwave<br/>the microgenre of electronic music.</div>
 
 <br />
 
