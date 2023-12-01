@@ -2,7 +2,6 @@
 
 import * as THREE from "three";
 import { useRef, useEffect } from "react";
-import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
 import { RenderPass } from "three/examples/jsm/postprocessing/RenderPass.js";
 import { EffectComposer } from "three/examples/jsm/postprocessing/EffectComposer.js";
 import { GammaCorrectionShader } from "three/examples/jsm/shaders/GammaCorrectionShader.js";
@@ -54,13 +53,13 @@ const ThreeScene: React.FC = () => {
       scene.add(plane2);
 
       // lights
-      const ambientLight = new THREE.AmbientLight(0xffffff, 10);
+      const ambientLight = new THREE.AmbientLight(0xffffff, 100);
       scene.add(ambientLight);
 
       // right spotlight aiming to the left
       const rightSpotLight = new THREE.SpotLight(
         0x007de7,
-        20,
+        100,
         25,
         Math.PI * 0.1,
         0.25
@@ -77,7 +76,7 @@ const ThreeScene: React.FC = () => {
       // left spotlight aiming to the right
       const leftSpotLight = new THREE.SpotLight(
         0x007de7,
-        20,
+        100,
         25,
         Math.PI * 0.1,
         0.25
@@ -105,10 +104,6 @@ const ThreeScene: React.FC = () => {
       camera.position.x = 0;
       camera.position.y = 0.06;
       camera.position.z = 1.1;
-
-      // controls
-      const controls = new OrbitControls(camera, canvas);
-      controls.enableDamping = true;
 
       // renderer
       const renderer = new THREE.WebGLRenderer({ canvas: canvas });
@@ -161,9 +156,6 @@ const ThreeScene: React.FC = () => {
       const tick = () => {
         // get the elapsedTime since the scene rendered from the clock
         const elapsedTime = clock.getElapsedTime();
-
-        // update controls
-        controls.update();
 
         /**
          * When the first plane reaches a positon of z = 2
